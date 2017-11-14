@@ -2,22 +2,8 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sbs
-
 from crawlDivergenceTools import *
-
-
-
-
-def findSeeds(df):
-    seeds = df[df['parentID'] == 'seed']['id'].tolist()
-    seedsUnique = set(seeds)
-    return seedsUnique
-
-
-
-
-
-
+import os
 
 def computeOverlapOverTime(aName,A,bName,B,parseType):
 
@@ -50,16 +36,22 @@ def computeOverlapOverTime(aName,A,bName,B,parseType):
         nMatch.append(NN) #store
         percentMatch.append(float(NN)/float(totalPossible)*100.) #store as a percentage
         chunkSize.append(totalPossible)
-        #print i
 
-    aName = aName.split('/')[-1]
-    bName = bName.split('/')[-1]
+    combined_name = clean_basename(aName) + clean_basename(bName)
+    #aName = aName.split('/')[-1]
+    #bName = bName.split('/')[-1]
+    aName = os.path.basename(aName)
+    bName = os.path.basename(bName)
+
     plt.figure()
     plt.plot(chunkSize,nMatch,'k')
     plt.xlabel('1st N unique pages')
     plt.ylabel('N pages overlap')
     plt.title(aName + ' & ' + bName + '; ' + parseType)
-    figName = aName.replace('./data/clean', '').replace('.csv','') + bName.replace('./data/clean', '').replace('.csv','') + 'OverlapN' + parseType + '.png'
+
+    #figName = aName.replace('./data/clean', '').replace('.csv','') + bName.replace('./data/clean', '').replace('.csv','') + 'OverlapN' + parseType + '.png'
+    figName = combined_name + 'OverlapN' + parseType + '.png'
+    
     plt.savefig(figName, bbox_inches='tight')
     plt.close()
 
@@ -68,52 +60,12 @@ def computeOverlapOverTime(aName,A,bName,B,parseType):
     plt.xlabel('1st N unique pages')
     plt.ylabel('% pages overlap')
     plt.title(aName + ' & ' + bName + '; ' + parseType)
-    figName = aName.replace('./data/clean', '').replace('.csv','') + bName.replace('./data/clean', '').replace('.csv','') + 'OverlapP' + parseType + '.png'
+
+    #figName = aName.replace('./data/clean', '').replace('.csv','') + bName.replace('./data/clean', '').replace('.csv','') + 'OverlapP' + parseType + '.png'
+    figName = combined_name + 'OverlapP' + parseType + '.png'
+    
     plt.savefig(figName, bbox_inches='tight')
     plt.close()
-
-    print 'here'
-
-def addUnique(A,B,setA):
-    #Add unique elements of B to A
-    repetedElements=0
-    for item in B:
-        if (item not in setA):
-            setA.add(item)  #append to set
-            A.append(item)  #append to list
-        else:
-            repetedElements+=1
-    #if repetedElements>0:
-    #    print repetedElements
-    return (A,setA)
-
-
-def getPathFromSeed(parentIDDict, pageID):
-    kk = 0
-    keysToVisit = []
-    currentSite = 0
-    leafNode = 0
-    graphPath = set()
-    keysToVisit.append(pageID)
-    keysToVisitSet = set()
-    keysToVisitSet.update(pageID)  # shadow data structure; order not preserved
-    kMax = 2000000
-    while (currentSite < len(keysToVisit) and kk < kMax):
-        kk += 1
-        checkPage = keysToVisit[currentSite]
-        currentSite += 1
-        addToQueue = parentIDDict.get(checkPage, 0)
-        if addToQueue != 0:
-            (keysToVisit, keysToVisitSet) = addUnique(keysToVisit, addToQueue, keysToVisitSet)
-            # print addToQueue
-        else:
-            leafNode += 1
-        if kk % 100000 == 0:
-            print kk, leafNode, len(keysToVisitSet)
-            # print keysToVisitSet
-
-    return keysToVisit
-
 
 def computeOverlapPerSeed(c1,A,c2,B,parseType):
 
@@ -122,16 +74,12 @@ def computeOverlapPerSeed(c1,A,c2,B,parseType):
     seedURLs = list(set(A[A['id'].isin(seedsA)][parseType].tolist()))
     seedURLs.sort()  #get them in alphabetical order
     seedsA = [A[A[parseType]==i]['id'].iloc[0] for i in seedURLs]  #seed id's with URL's in alphabetical order
-
-
     seedsB = list(findSeeds(B))
 
     pcDictA = getParentChildDict(c1)
     pcDictB = getParentChildDict(c2)
 
-
     # needs to get seeds
-    print 'here'
     crawlPathA = []
     crawlPathB = []
     for singleSeed in seedsA:
@@ -167,11 +115,8 @@ def computeOverlapPerSeed(c1,A,c2,B,parseType):
             urlList = B.loc[B['id'].isin(tt)][parseType].tolist()
             crawlPathB.append(urlList)
 
-            print 'here'
-
         except (IndexError):
             pass
-
 
     nA = len(crawlPathA)  # # of crawls
     C = np.zeros((nA,nA),dtype=np.int32)
@@ -194,21 +139,13 @@ def computeOverlapPerSeed(c1,A,c2,B,parseType):
     df1.insert(0, 'url', seedURLs)
     print df1
 
-    reportName = c1.replace('./data/clean', '').replace('.csv','') + c2.replace('./data/clean', '').replace('.csv','') + 'OverlapPerSeed' + parseType + '.csv'
+    #reportName = c1.replace('./data/clean', '').replace('.csv','') + c2.replace('./data/clean', '').replace('.csv','') + 'OverlapPerSeed' + parseType + '.csv'
+    reportName = clean_basename(c1) + clean_basename(c2) + 'OverlapPerSeed' + parseType + '.csv'
+
     with open(reportName,'w') as fp:
         df1.to_csv(fp, sep=',')
 
     return (crawlPathA,crawlPathB)
-
-
-#to do: implement type1, type2, type2 parsin throughout compairison
-
-
-
-
-
-
-
 
 
 def compareCrawls(c1,c2,parseType):
@@ -218,36 +155,17 @@ def compareCrawls(c1,c2,parseType):
     B = pd.read_csv(c2)  #read the file
 
     #parse to type1, type2, type3
-
-    #no parsing
     computeOverlapOverTime(c1,A,c2,B,parseType)
     computeOverlapPerSeed(c1,A,c2,B,parseType)
-
-    #type1 parsing
-    #A = parseType1(A)
-    #B = parseType1(B)
-    #computeOverlapOverTime(c1,A,c2,B,'Type 1')
-
-    #type2 parsing
-    #A = parseType2(A)
-    #B = parseType2(B)
-    #computeOverlapOverTime(c1,A,c2,B,'Type 2')
-
-    print "here"
-
-
 
 
 
 if __name__ == "__main__":
 
-
-
 #need to do this for each seed; need to match seeds across crawls
 
     c1 = './data/cleanhg_crawl_1.csv'
     c2 = './data/cleanhg_crawl_3.csv'
-
     c3 = './data/cleanjpl_sparkler_crawl1.csv'
     c4 = './data/cleanjpl_sparkler_crawl2.csv'
 
@@ -257,9 +175,7 @@ if __name__ == "__main__":
 
     #compareCrawls(c1,c1,parseType)
 
-
     #endCode
-
 
     for i in allCrawls:
         for j in allCrawls:

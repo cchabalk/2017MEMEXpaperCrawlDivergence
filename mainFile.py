@@ -4,59 +4,13 @@ import ujson
 from matplotlib import pyplot as plt
 plt.rcParams["font.family"] = "Times New Roman"
 import seaborn as sbs
-from crawlDivergenceTools import writeLogFile
-
-
-def getPathFromSeed(parentIDDict, pageID):
-    kk = 0
-    keysToVisit = []
-    currentSite = 0
-    leafNode = 0
-    graphPath = set()
-    keysToVisit.append(pageID)
-    keysToVisitSet = set()
-    keysToVisitSet.update(pageID)  # shadow data structure; order not preserved
-    kMax = 1600000
-    while (currentSite < len(keysToVisit) and kk < kMax):
-        kk += 1
-        checkPage = keysToVisit[currentSite]
-        currentSite += 1
-        addToQueue = parentIDDict.get(checkPage, 0)
-        if addToQueue != 0:
-            (keysToVisit, keysToVisitSet) = addUnique(keysToVisit, addToQueue, keysToVisitSet)
-            # print addToQueue
-        else:
-            leafNode += 1
-        if kk % 100000 == 0:
-            pass
-            #print kk, leafNode, len(keysToVisitSet)
-            # print keysToVisitSet
-
-    return keysToVisit
-
-
-def addUnique(A,B,setA):
-    #Add unique elements of B to A
-    repetedElements=0
-    for item in B:
-        if (item not in setA):
-            setA.add(item)  #append to set
-            A.append(item)  #append to list
-        else:
-            repetedElements+=1
-    #if repetedElements>0:
-    #    print repetedElements
-    return (A,setA)
-
-
-
-
-
+from crawlDivergenceTools import writeLogFile,addUnique,getPathFromSeed
+from compareCrawls import clean_basename
 
 def generateReport(fileName):
 
-
-    reportName = fileName.replace('./data/clean', '').replace('.csv', '') + 'report.txt'
+    #reportName = fileName.replace('./data/clean', '').replace('.csv', '') + 'report.txt'
+    reportName = clean_basename(fileName) + 'report.txt'
 
     logStatement = "Analyzing file: " + fileName
     print logStatement
@@ -131,14 +85,6 @@ def generateReport(fileName):
     print logStatement
     writeLogFile(reportName, logStatement)
 
-
-
-
-
-
-
-
-
     if True:
 
         #pages per depth
@@ -148,7 +94,9 @@ def generateReport(fileName):
         a1.set_title(fileName)
 
         a1.set_yscale('log')
-        figName = fileName.replace('./data/clean', '').replace('.csv','') + 'PagesPerDepth' + '.png'
+        #figName = fileName.replace('./data/clean', '').replace('.csv','') + 'PagesPerDepth' + '.png'
+        figName = clean_basename(fileName) + 'PagesPerDepth.png'
+
         plt.savefig(figName, bbox_inches='tight')
 
         plt.interactive(False)
@@ -160,7 +108,8 @@ def generateReport(fileName):
         plt.xlabel('crawl depth')
         plt.ylabel('# pages')
         plt.title(fileName)
-        figName = fileName.replace('./data/clean', '').replace('.csv','') + 'PagesPerDepthLog' + '.png'
+        #figName = fileName.replace('./data/clean', '').replace('.csv','') + 'PagesPerDepthLog' + '.png'
+        figName = clean_basename(fileName) + 'PagesPerDepthLog.png'
         plt.savefig(figName, bbox_inches='tight')
 
         plt.interactive(False)
@@ -201,7 +150,8 @@ def generateReport(fileName):
 
         title = fileName + '; crawl length/seed'
         plt.title(title)
-        figName = fileName.replace('./data/clean', '').replace('.csv','') + 'crawlLengthPerSeed' + '.png'
+        #figName = fileName.replace('./data/clean', '').replace('.csv','') + 'crawlLengthPerSeed' + '.png'
+        figName = clean_basename(fileName) + 'crawlLengthPerSeed.png'
 
         plt.interactive(False)
         plt.savefig(figName,bbox_inches='tight')
@@ -220,19 +170,17 @@ def generateReport(fileName):
         plt.xlabel('time')
         plt.ylabel('# pages')
         plt.title(fileName + '; # pages / time')
-        figName = fileName.replace('./data/clean', '').replace('.csv','') + 'pagesPerTime' + '.png'
+        #figName = fileName.replace('./data/clean', '').replace('.csv','') + 'pagesPerTime' + '.png'
+        figName = clean_basename(fileName) + 'pagesPerTime.png'
 
         plt.interactive(False)
         plt.savefig(figName,bbox_inches='tight')
         plt.close()
 
-        print 'here'
-
 
 if __name__=="__main__":
     #fileName = './data/cleanhg_crawl_1.csv'
     #fileName = './data/cleanhg_crawl_3.csv'
-
 
     #fileName = './data/cleanjpl_sparkler_crawl1.csv'
     fileName = './data/cleanjpl_sparkler_crawl2.csv'

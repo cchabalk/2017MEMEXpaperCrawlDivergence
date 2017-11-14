@@ -5,7 +5,8 @@ from matplotlib import pyplot as plt
 import seaborn as sbs
 import ujson
 from urlparse import urlparse
-
+import os
+import re
 
 def detectTeam(df):
     team = 'unknown'
@@ -22,7 +23,6 @@ def detectTeam(df):
 
 
 def normalizeColumnNames(team,df):
-
     if team == 'JPL':
         df = df.rename(columns={df.columns[0]: 'id'})
         df = df.rename(columns={df.columns[2]: 'depth'})  # discover_depth
@@ -64,6 +64,9 @@ def addUnique(A,B,setA):
     #    print repetedElements
     return (A,setA)
 
+def clean_basename(x):
+    return re.sub(".*clean([a-zA-Z_\-0-9]+)\.csv", r"\1", x)
+
 def getPathFromSeed(parentIDDict, pageID):
     kk = 0
     keysToVisit = []
@@ -91,13 +94,10 @@ def getPathFromSeed(parentIDDict, pageID):
 
     return keysToVisit
 
-
-
 def findSeeds(df):
     seeds = df[df['parentID'] == 'seed']['id'].tolist()
     seedsUnique = set(seeds)
     return seedsUnique
-
 
 def removePathsOfLength1(parentChildDict,df):
 
@@ -151,28 +151,23 @@ def type3(inputURL):
 
 
 def cleanLinksAndAddParseTypes(df):
-
     df['type1URL'] = df.url.apply(type1)
     df['type2URL'] = df.url.apply(type2)
     df['type3URL'] = df.url.apply(type3)
-
     return df
 
 def saveDataFrame(fileName,df):
-
     exportName = fileName
     if exportName[0]=='.':
         exportName = '.' + exportName[1:].split('.')[0]
     exportName = exportName.split('/')[-1]
-    exportName = './data/clean'+exportName+'.csv'
+    exportName = os.path.join(os.path.dirname(fileName),'clean'+exportName+'.csv')
     df.to_csv(exportName)
-
     print 'done with ' + exportName
 
 def writeLogFile(fileName,textString):
     with open(fileName, 'a+') as fp:
         fp.write(textString+'\n')
-
 
 def normalizeAndTrim(fileName):
     df = pd.read_csv(fileName)  #read the file
@@ -183,14 +178,10 @@ def normalizeAndTrim(fileName):
     df = cleanLinksAndAddParseTypes(df)
     saveDataFrame(fileName,df)
 
-
-    #then generate report; etc.
-
 def getParentChildDict(fileName):
     dictFile = fileName.replace('clean', '').replace('csv', 'json')
     with open(dictFile, 'r') as f:
         dataIn = f.read()
-
     parentChildDict = ujson.loads(dataIn)
     return parentChildDict
 
